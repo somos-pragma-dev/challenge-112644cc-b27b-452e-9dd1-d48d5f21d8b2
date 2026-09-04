@@ -1,0 +1,1 @@
+INSERT INTO products (name, price, stock, category) VALUES ('Initial Product', 5.0, 50, 'Initial Category');

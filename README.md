@@ -1,12 +1,12 @@
-# Diseño y Desarrollo de una API REST para Gestión de Productos
+# Implementación de una API REST para gestión de productos
 
-El equipo de desarrollo necesita una API REST que gestione productos en un catálogo. Los productos tienen nombre, precio, stock y categoría. La API debe prohibir precios negativos y nombres duplicados. Los productos se persistirán en una base de datos H2 y se documentarán con Swagger. El dominio es el de un e-commerce que requiere alta disponibilidad y consistencia de datos.
+El sistema debe permitir la gestión de productos con nombre, precio, stock y categoría. Los precios no pueden ser negativos y los nombres no pueden ser duplicados. La API debe persistir los productos en una base de datos H2 y debe estar documentada con Swagger.
 
 ## Informacion General
 
 | Campo | Valor |
 |-------|-------|
-| **Tema** | java-spring-boot |
+| **Tema** | API REST con persistencia en H2 y documentación con Swagger |
 | **Nivel** | junior-l1 |
 | **Tipo** | practical |
 | **Tiempo estimado** | 8 horas |
@@ -21,11 +21,11 @@ El equipo de desarrollo necesita una API REST que gestione productos en un catá
 
 **Instrucciones:**
 
-- Asegúrate de tener instalado para ejecutar el proyecto: Un IDE o editor de código.
+- Asegúrate de tener instalado para ejecutar el proyecto: JDK 17+, Maven 3.9+, IDE con soporte Java.
 - Copia todo el contenido del campo **Código Base** de este reto — incluyendo el texto de instrucciones que aparece al inicio.
 - Abre un asistente de IA (Claude en claude.ai, ChatGPT o Gemini — se recomienda Claude), pega el contenido copiado en el chat y envíalo.
 - El asistente analizará los archivos, corregirá errores y generará un archivo ZIP descargable. Descárgalo y extráelo en la carpeta donde quieras trabajar.
-- Verifica que el proyecto arranca sin errores.
+- Ejecuta `mvn compile` en la raíz. Si no hay errores, estás listo.
 
 **Entregable:** El proyecto compila/arranca sin errores.
 
@@ -38,87 +38,87 @@ El equipo de desarrollo necesita una API REST que gestione productos en un catá
 
 </details>
 
-### Fase 1: Definición del Modelo de Datos
+### Fase 1: Definición y persistencia de productos
 
-**Objetivo:** Definir el modelo de datos para los productos, asegurando la prohibición de precios negativos y nombres duplicados.
+**Objetivo:** Definir y persistir productos en la base de datos H2.
 
-**Tiempo estimado:** 2 horas
+**Tiempo estimado:** 3 horas
 
 **Instrucciones:**
 
-- Identificar las propiedades esenciales de un producto.
-- Establecer las restricciones de validación para el nombre y el precio.
-- Documentar las reglas de negocio para la creación y actualización de productos.
+- Crear un modelo de producto con los atributos mencionados.
+- Implementar un repositorio para persistir los productos en H2.
+- Asegurar que los precios no sean negativos y los nombres no sean duplicados.
 
-**Entregable:** Modelo de datos para productos con reglas de validación documentadas.
+**Entregable:** Modelo de producto y repositorio funcional.
 
 <details>
 <summary>Pistas de conocimiento</summary>
 
-- Considera cómo representar y validar las propiedades de un producto.
-- Piensa en las posibles validaciones necesarias para cumplir con las reglas de negocio.
+- Considera cómo validar los atributos del producto antes de persistir.
+- Piensa en cómo manejar los errores de validación.
 
 </details>
 
 ### Fase 2: Implementación de la API REST
 
-**Objetivo:** Implementar los endpoints REST para la gestión de productos, asegurando la persistencia en H2 y la documentación con Swagger.
+**Objetivo:** Implementar endpoints para crear, leer, actualizar y eliminar productos.
 
-**Tiempo estimado:** 4 horas
+**Tiempo estimado:** 3 horas
 
 **Instrucciones:**
 
-- Crear los endpoints para crear, leer, actualizar y eliminar productos.
-- Persistir los productos en una base de datos H2.
+- Crear endpoints para las operaciones CRUD de productos.
+- Asegurar que los endpoints sigan los principios REST.
 - Documentar los endpoints con Swagger.
 
-**Entregable:** API REST funcional con endpoints para gestión de productos, persistencia en H2 y documentación con Swagger.
+**Entregable:** Endpoints CRUD documentados con Swagger.
 
 <details>
 <summary>Pistas de conocimiento</summary>
 
-- Considera cómo estructurar los endpoints para seguir las mejores prácticas de REST.
-- Piensa en cómo manejar las validaciones y la persistencia de datos de manera eficiente.
+- Considera cómo estructurar los endpoints para seguir los principios REST.
+- Piensa en cómo documentar los endpoints de manera clara y concisa.
 
 </details>
 
-### Fase 3: Pruebas y Optimización
+### Fase 3: Pruebas y mejoras
 
-**Objetivo:** Realizar pruebas unitarias y de integración para asegurar la funcionalidad y optimizar el rendimiento de la API.
+**Objetivo:** Realizar pruebas y mejorar la API.
 
 **Tiempo estimado:** 2 horas
 
 **Instrucciones:**
 
-- Escribir pruebas unitarias para los modelos de datos y las validaciones.
-- Escribir pruebas de integración para los endpoints REST.
-- Optimizar el rendimiento de la API, considerando la alta disponibilidad y consistencia de datos.
+- Realizar pruebas unitarias y de integración para la API.
+- Identificar y corregir errores.
+- Mejorar la documentación con Swagger.
 
-**Entregable:** API REST con pruebas unitarias y de integración, y optimización de rendimiento.
+**Entregable:** API mejorada y documentada.
 
 <details>
 <summary>Pistas de conocimiento</summary>
 
-- Considera cómo escribir pruebas efectivas para asegurar la funcionalidad de la API.
-- Piensa en cómo optimizar el rendimiento de la API para cumplir con los requisitos de alta disponibilidad y consistencia de datos.
+- Considera cómo realizar pruebas efectivas para la API.
+- Piensa en cómo mejorar la documentación con Swagger.
 
 </details>
 
 ## Dimensiones Evaluadas
 
-- **queEs**: ¿Qué es un modelo de datos y por qué es importante en la gestión de productos?
-- **paraQueSirve**: ¿Para qué sirven los endpoints REST en la gestión de productos?
-- **comoSeUsa**: ¿Cómo se usan las validaciones en la gestión de productos?
-- **erroresComunes**: ¿Cuáles son los errores comunes al implementar una API REST y cómo se pueden evitar?
-- **queDecisionesImplica**: ¿Qué decisiones implica la optimización del rendimiento de la API?
+- **queEs**: ¿Qué es un modelo de producto y cómo se usa en la API?
+- **paraQueSirve**: ¿Para qué sirve la documentación con Swagger en la API?
+- **comoSeUsa**: ¿Cómo se usan los endpoints CRUD en la API?
+- **erroresComunes**: ¿Cuáles son los errores comunes al implementar una API REST y cómo se manejan?
+- **queDecisionesImplica**: ¿Qué decisiones implica la mejora de la API y la documentación con Swagger?
 
 ## Criterios de Evaluacion
 
-- Definición del modelo de datos con reglas de validación.
-- Implementación de endpoints REST funcionales.
-- Persistencia de datos en H2 y documentación con Swagger.
-- Pruebas unitarias y de integración efectivas.
-- Optimización del rendimiento de la API.
+- Implementación correcta del modelo de producto y repositorio.
+- Implementación de endpoints CRUD siguiendo los principios REST.
+- Documentación clara y concisa con Swagger.
+- Realización de pruebas unitarias y de integración.
+- Mejora de la API y documentación con Swagger.
 
 ## Como trabajar con un asistente de IA
 

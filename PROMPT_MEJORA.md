@@ -14,17 +14,17 @@ Este bloque manda sobre los archivos adjuntos. El stack y el rol salen de AQUÍ,
 Crear una API REST con persistencia en H2 y documentación con Swagger
 
 ### Reto
-- Tema: java-spring-boot
+- Tema: API REST con persistencia en H2 y documentación con Swagger
 - Seniority: junior-l1
 - Tipo: practical
-- Título: Diseño y Desarrollo de una API REST para Gestión de Productos
+- Título: Implementación de una API REST para gestión de productos
 - Tiempo estimado: 8 horas
 
 ### Fases (trabajo del HUMANO — PROHIBIDO completarlas)
 No implementes estos entregables. Dejalos como hueco pedagógico. El asistente solo materializa el proyecto arrancable para que el participante pueda trabajar.
-- Fase 1: Definición del Modelo de Datos — objetivo: Definir el modelo de datos para los productos, asegurando la prohibición de precios negativos y nombres duplicados. — entregable (NO resolver): Modelo de datos para productos con reglas de validación documentadas.
-- Fase 2: Implementación de la API REST — objetivo: Implementar los endpoints REST para la gestión de productos, asegurando la persistencia en H2 y la documentación con Swagger. — entregable (NO resolver): API REST funcional con endpoints para gestión de productos, persistencia en H2 y documentación con Swagger.
-- Fase 3: Pruebas y Optimización — objetivo: Realizar pruebas unitarias y de integración para asegurar la funcionalidad y optimizar el rendimiento de la API. — entregable (NO resolver): API REST con pruebas unitarias y de integración, y optimización de rendimiento.
+- Fase 1: Definición y persistencia de productos — objetivo: Definir y persistir productos en la base de datos H2. — entregable (NO resolver): Modelo de producto y repositorio funcional.
+- Fase 2: Implementación de la API REST — objetivo: Implementar endpoints para crear, leer, actualizar y eliminar productos. — entregable (NO resolver): Endpoints CRUD documentados con Swagger.
+- Fase 3: Pruebas y mejoras — objetivo: Realizar pruebas y mejorar la API. — entregable (NO resolver): API mejorada y documentada.
 
 Eres un asistente experto en análisis, corrección y generación de archivos de cualquier tipo:
 código fuente, documentación, hojas de cálculo, documentos Word, configuraciones, entre otros.
@@ -160,38 +160,176 @@ El participante que recibirá este proyecto los debe encontrar y resolver él mi
 
 INPUT
 Aquí está la cadena con los archivos:
-package com.example.productapi;
+// === ARCHIVO: pom.xml ===
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>product-management-api</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <name>Product Management API</name>
+    <description>API REST para gestión de productos</description>
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+    <properties>
+        <java.version>21</java.version>
+        <spring-boot.version>3.4.0</spring-boot.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <version>${spring-boot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <version>${spring-boot.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.1.214</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-ui</artifactId>
+            <version>2.3.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <version>${spring-boot.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+
+// === ARCHIVO: src/main/java/com/example/api/ProductController.java ===
+package com.example.api;
+
+import com.example.model.Product;
+import com.example.repository.ProductRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/products")
+public class ProductController {
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Operation(summary = "Get all products")
+    @GetMapping
+    public List<Product> getAllProducts() {
+        return productRepository.findAll();
+    }
+
+    @Operation(summary = "Get product by ID")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Product found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Product.class))),
+        @ApiResponse(responseCode = "404", description = "Product not found")
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
+        return productRepository.findById(id)
+               .map(product -> new ResponseEntity<>(product, HttpStatus.OK))
+               .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+
+    @Operation(summary = "Create a new product")
+    @PostMapping
+    public ResponseEntity<Product> createProduct(@Valid @RequestBody Product product) {
+        Product savedProduct = productRepository.save(product);
+        return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
+    }
+
+    @Operation(summary = "Update an existing product")
+    @PutMapping("/{id}")
+    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @Valid @RequestBody Product productDetails) {
+        return productRepository.findById(id)
+               .map(product -> {
+                    product.setName(productDetails.getName());
+                    product.setPrice(productDetails.getPrice());
+                    product.setStock(productDetails.getStock());
+                    product.setCategory(productDetails.getCategory());
+                    Product updatedProduct = productRepository.save(product);
+                    return new ResponseEntity<>(updatedProduct, HttpStatus.OK);
+                })
+               .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+
+    @Operation(summary = "Delete a product by ID")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
+        return productRepository.findById(id)
+               .map(product -> {
+                    productRepository.delete(product);
+                    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+                })
+               .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+}
+
+// === ARCHIVO: src/main/java/com/example/model/Product.java ===
+package com.example.model;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 
 @Entity
+@Table(name = "products")
 public class Product {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @NotNull(message = "Name cannot be null")
+
+    @NotBlank(message = "Name is mandatory")
+    @Column(unique = true)
     private String name;
-    @Positive(message = "Price must be positive")
+
+    @NotNull(message = "Price is mandatory")
+    @Min(value = 0, message = "Price must be non-negative")
     private Double price;
-    @NotNull(message = "Stock cannot be null")
+
+    @NotNull(message = "Stock is mandatory")
     private Integer stock;
-    @NotNull(message = "Category cannot be null")
+
+    @NotBlank(message = "Category is mandatory")
     private String category;
 
-    public Product() {}
-
-    public Product(String name, Double price, Integer stock, String category) {
-        this.name = name;
-        this.price = price;
-        this.stock = stock;
-        this.category = category;
-    }
-
+    // Getters and setters
     public Long getId() {
         return id;
     }
@@ -232,160 +370,30 @@ public class Product {
         this.category = category;
     }
 }
-// === ARCHIVO: src/main/java/com/example/productapi/controller/ProductController.java ===
-package com.example.productapi.controller;
 
-import com.example.productapi.Product;
-import com.example.productapi.service.ProductService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+// === ARCHIVO: src/main/java/com/example/repository/ProductRepository.java ===
+package com.example.repository;
 
-import java.util.List;
-
-@RestController
-@RequestMapping("/api/products")
-public class ProductController {
-
-    @Autowired
-    private ProductService productService;
-
-    @Operation(summary = "Get all products")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Found products", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Product.class)))
-    })
-    @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts() {
-        return ResponseEntity.ok(productService.getAllProducts());
-    }
-
-    @Operation(summary = "Get product by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Found product", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Product.class))),
-            @ApiResponse(responseCode = "404", description = "Product not found")
-    })
-    @GetMapping("/{id}")
-    public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-        return productService.getProductById(id)
-               .map(product -> new ResponseEntity<>(product, HttpStatus.OK))
-               .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
-    }
-
-    @Operation(summary = "Create a new product")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Product created", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Product.class))),
-            @ApiResponse(responseCode = "400", description = "Invalid input")
-    })
-    @PostMapping
-    public ResponseEntity<Product> createProduct(@RequestBody Product product) {
-        Product savedProduct = productService.saveProduct(product);
-        return new ResponseEntity<>(savedProduct, HttpStatus.CREATED);
-    }
-
-    @Operation(summary = "Update an existing product")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Product updated", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Product.class))),
-            @ApiResponse(responseCode = "404", description = "Product not found")
-    })
-    @PutMapping("/{id}")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product productDetails) {
-        return productService.updateProduct(id, productDetails)
-               .map(product -> new ResponseEntity<>(product, HttpStatus.OK))
-               .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
-    }
-
-    @Operation(summary = "Delete a product")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Product deleted"),
-            @ApiResponse(responseCode = "404", description = "Product not found")
-    })
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
-        if (productService.deleteProduct(id)) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-    }
-}
-// === ARCHIVO: src/main/java/com/example/productapi/service/ProductService.java ===
-package com.example.productapi.service;
-
-import com.example.productapi.Product;
-import com.example.productapi.repository.ProductRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
-import java.util.Optional;
-
-@Service
-public class ProductService {
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Transactional(readOnly = true)
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
-    }
-
-    @Transactional(readOnly = true)
-    public Optional<Product> getProductById(Long id) {
-        return productRepository.findById(id);
-    }
-
-    @Transactional
-    public Product saveProduct(Product product) {
-        return productRepository.save(product);
-    }
-
-    @Transactional
-    public Optional<Product> updateProduct(Long id, Product productDetails) {
-        return productRepository.findById(id).map(product -> {
-            product.setName(productDetails.getName());
-            product.setPrice(productDetails.getPrice());
-            product.setStock(productDetails.getStock());
-            product.setCategory(productDetails.getCategory());
-            return productRepository.save(product);
-        });
-    }
-
-    @Transactional
-    public boolean deleteProduct(Long id) {
-        if (productRepository.existsById(id)) {
-            productRepository.deleteById(id);
-            return true;
-        }
-        return false;
-    }
-}
-// === ARCHIVO: src/main/java/com/example/productapi/repository/ProductRepository.java ===
-package com.example.productapi.repository;
-
-import com.example.productapi.Product;
+import com.example.model.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {}
-// === ARCHIVO: src/main/resources/db/schema.sql ===
-CREATE TABLE products (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    price DECIMAL(10, 2) NOT NULL,
-    stock INT NOT NULL,
-    category VARCHAR(255) NOT NULL
-);
-// === ARCHIVO: src/main/resources/swagger/swagger-config.yaml ===
+
+// === ARCHIVO: src/main/resources/application.properties ===
+spring.datasource.url=jdbc:h2:mem:testdb
+spring.datasource.driverClassName=org.h2.Driver
+spring.datasource.username=sa
+spring.datasource.password=
+spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+spring.h2.console.enabled=true
+springdoc.api-docs.path=/api-docs
+
+// === ARCHIVO: src/main/resources/openapi.yaml ===
 openapi: 3.0.1
 info:
-  title: Product API
+  title: Product Management API
   version: 1.0.0
 paths:
   /api/products:
@@ -393,13 +401,7 @@ paths:
       summary: Get all products
       responses:
         '200':
-          description: Found products
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Product'
+          description: List of products
     post:
       summary: Create a new product
       requestBody:
@@ -411,10 +413,6 @@ paths:
       responses:
         '201':
           description: Product created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Product'
   /api/products/{id}:
     get:
       summary: Get product by ID
@@ -423,14 +421,10 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '200':
-          description: Found product
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Product'
+          description: Product found
         '404':
           description: Product not found
     put:
@@ -440,7 +434,7 @@ paths:
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
@@ -450,20 +444,16 @@ paths:
       responses:
         '200':
           description: Product updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Product'
         '404':
           description: Product not found
     delete:
-      summary: Delete a product
+      summary: Delete a product by ID
       parameters:
         - name: id
           in: path
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         '204':
           description: Product deleted
@@ -476,178 +466,103 @@ components:
       properties:
         id:
           type: integer
+          format: int64
         name:
           type: string
         price:
           type: number
+          format: double
         stock:
           type: integer
         category:
           type: string
-// === ARCHIVO: src/test/java/com/example/productapi/ProductControllerTest.java ===
-package com.example.productapi;
 
-import com.example.productapi.Product;
-import com.example.productapi.controller.ProductController;
-import com.example.productapi.service.ProductService;
-import org.junit.jupiter.api.BeforeEach;
+// === ARCHIVO: src/test/java/com/example/api/ProductControllerTest.java ===
+package com.example.api;
+
+import com.example.model.Product;
+import com.example.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
-import java.util.Arrays;
-import java.util.List;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.hamcrest.Matchers.*;
 
-@WebMvcTest(ProductController.class)
+@SpringBootTest
+@AutoConfigureMockMvc
 class ProductControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
-    private ProductService productService;
-
-    @InjectMocks
-    private ProductController productController;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+    @Autowired
+    private ProductRepository productRepository;
 
     @Test
-    void getAllProducts() throws Exception {
-        Product product = new Product("Product 1", 10.0, 100, "Category 1");
-        List<Product> allProducts = Arrays.asList(product);
-        when(productService.getAllProducts()).thenReturn(allProducts);
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/products")
-                       .contentType(MediaType.APPLICATION_JSON))
+    void getAllProducts_shouldReturnEmptyList() throws Exception {
+        mockMvc.perform(get("/api/products"))
                .andExpect(status().isOk())
-               .andExpect(MockMvcResultMatchers.jsonPath("$.[0].name").value("Product 1"));
+               .andExpect(jsonPath("$.length()", is(0)));
     }
 
     @Test
-    void getProductById() throws Exception {
-        Product product = new Product("Product 1", 10.0, 100, "Category 1");
-        when(productService.getProductById(1L)).thenReturn(java.util.Optional.of(product));
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/products/1")
-                       .contentType(MediaType.APPLICATION_JSON))
-               .andExpect(status().isOk())
-               .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Product 1"));
-    }
+    void createProduct_shouldReturnCreatedProduct() throws Exception {
+        Product product = new Product(null, "Test Product", 10.0, 100, "Test Category");
 
-    @Test
-    void createProduct() throws Exception {
-        Product product = new Product("Product 1", 10.0, 100, "Category 1");
-        when(productService.saveProduct(product)).thenReturn(product);
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/products")
+        mockMvc.perform(post("/api/products")
                        .contentType(MediaType.APPLICATION_JSON)
-                       .content("{\"name\":\"Product 1\",\"price\":10.0,\"stock\":100,\"category\":\"Category 1\"}"))
+                       .content(JsonUtil.toJson(product)))
                .andExpect(status().isCreated())
-               .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Product 1"));
+               .andExpect(jsonPath("$.name", is(product.getName())))
+               .andExpect(jsonPath("$.price", is(product.getPrice())))
+               .andExpect(jsonPath("$.stock", is(product.getStock())))
+               .andExpect(jsonPath("$.category", is(product.getCategory())));
     }
 
     @Test
-    void updateProduct() throws Exception {
-        Product product = new Product("Product 1", 10.0, 100, "Category 1");
-        when(productService.updateProduct(1L, product)).thenReturn(java.util.Optional.of(product));
-        mockMvc.perform(MockMvcRequestBuilders.put("/api/products/1")
-                       .contentType(MediaType.APPLICATION_JSON)
-                       .content("{\"name\":\"Product 1\",\"price\":10.0,\"stock\":100,\"category\":\"Category 1\"}"))
+    void getProductById_shouldReturnProduct() throws Exception {
+        Product product = productRepository.save(new Product(null, "Test Product", 10.0, 100, "Test Category"));
+
+        mockMvc.perform(get("/api/products/" + product.getId()))
                .andExpect(status().isOk())
-               .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Product 1"));
+               .andExpect(jsonPath("$.name", is(product.getName())))
+               .andExpect(jsonPath("$.price", is(product.getPrice())))
+               .andExpect(jsonPath("$.stock", is(product.getStock())))
+               .andExpect(jsonPath("$.category", is(product.getCategory())));
     }
 
     @Test
-    void deleteProduct() throws Exception {
-        when(productService.deleteProduct(1L)).thenReturn(true);
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/products/1")
-                       .contentType(MediaType.APPLICATION_JSON))
+    void updateProduct_shouldReturnUpdatedProduct() throws Exception {
+        Product product = productRepository.save(new Product(null, "Test Product", 10.0, 100, "Test Category"));
+        product.setName("Updated Product");
+        product.setPrice(20.0);
+        product.setStock(200);
+        product.setCategory("Updated Category");
+
+        mockMvc.perform(put("/api/products/" + product.getId())
+                       .contentType(MediaType.APPLICATION_JSON)
+                       .content(JsonUtil.toJson(product)))
+               .andExpect(status().isOk())
+               .andExpect(jsonPath("$.name", is(product.getName())))
+               .andExpect(jsonPath("$.price", is(product.getPrice())))
+               .andExpect(jsonPath("$.stock", is(product.getStock())))
+               .andExpect(jsonPath("$.category", is(product.getCategory())));
+    }
+
+    @Test
+    void deleteProduct_shouldReturnNoContent() throws Exception {
+        Product product = productRepository.save(new Product(null, "Test Product", 10.0, 100, "Test Category"));
+
+        mockMvc.perform(delete("/api/products/" + product.getId()))
                .andExpect(status().isNoContent());
     }
 }
-// === ARCHIVO: src/test/java/com/example/productapi/ProductServiceTest.java ===
-package com.example.productapi;
 
-import com.example.productapi.Product;
-import com.example.productapi.repository.ProductRepository;
-import com.example.productapi.service.ProductService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.context.SpringBootTest;
-import java.util.Optional;
-import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.*;
-
-@SpringBootTest
-class ProductServiceTest {
-
-    @Mock
-    private ProductRepository productRepository;
-
-    @InjectMocks
-    private ProductService productService;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
-    @Test
-    void getAllProducts() {
-        Product product = new Product("Product 1", 10.0, 100, "Category 1");
-        when(productRepository.findAll()).thenReturn(java.util.Arrays.asList(product));
-        List<Product> allProducts = productService.getAllProducts();
-        assertEquals(1, allProducts.size());
-        assertEquals("Product 1", allProducts.get(0).getName());
-    }
-
-    @Test
-    void getProductById() {
-        Product product = new Product("Product 1", 10.0, 100, "Category 1");
-        when(productRepository.findById(1L)).thenReturn(java.util.Optional.of(product));
-        Optional<Product> foundProduct = productService.getProductById(1L);
-        assertTrue(foundProduct.isPresent());
-        assertEquals("Product 1", foundProduct.get().getName());
-    }
-
-    @Test
-    void saveProduct() {
-        Product product = new Product("Product 1", 10.0, 100, "Category 1");
-        when(productRepository.save(product)).thenReturn(product);
-        Product savedProduct = productService.saveProduct(product);
-        assertEquals("Product 1", savedProduct.getName());
-    }
-
-    @Test
-    void updateProduct() {
-        Product existingProduct = new Product("Product 1", 10.0, 100, "Category 1");
-        Product updatedProduct = new Product("Product 1 Updated", 20.0, 200, "Category 1 Updated");
-        when(productRepository.findById(1L)).thenReturn(java.util.Optional.of(existingProduct));
-        when(productRepository.save(existingProduct)).thenReturn(updatedProduct);
-        Optional<Product> result = productService.updateProduct(1L, updatedProduct);
-        assertTrue(result.isPresent());
-        assertEquals("Product 1 Updated", result.get().getName());
-    }
-
-    @Test
-    void deleteProduct() {
-        when(productRepository.existsById(1L)).thenReturn(true);
-        boolean result = productService.deleteProduct(1L);
-        assertTrue(result);
-    }
-}
+// === ARCHIVO: src/test/resources/data.sql ===
+INSERT INTO products (name, price, stock, category) VALUES ('Initial Product', 5.0, 50, 'Initial Category');
 
 ```
